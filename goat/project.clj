@@ -7,5 +7,7 @@
                   [robert/hooke "1.3.0"]
 		  ;[dire "0.4.4"]
 		  [org.clojure/clojure "1.5.1"]]
+  
+  :global-vars {*warn-on-reflection* true}
 
   :plugins [ [no-man-is-an-island/lein-eclipse "2.0.0"]])

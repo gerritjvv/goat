@@ -1,6 +1,7 @@
 (ns goat.core
   (:require [clojure.core.reducers :as r]
-            [robert.hooke :refer [add-hook ]])
+            [robert.hooke :refer [add-hook clear-hooks]])
+  (:import [clojure.lang Var Symbol IFn IPersistentMap])
   )
 
 (defrecord FPerf [name call-count total-time])  
@@ -8,37 +9,54 @@
 (def perf-funs (ref {}))
 
 
-(defn fun-name [fun]
-  (symbol (str (.getName (.-ns fun)) "." (.-sym fun))))
+(defn fun-name [^Var fun]
+  (symbol (str (.getName (.-ns fun)) "/" (.-sym fun))))
 
-(defn get-fperf [name]
+(defn get-fperf [^Symbol name]
   "Argument name is a fully qualified symbol"
   (get @perf-funs name))
 
+(defn get-fperf-data [] 
+  @perf-funs)
 
-(defn update-fperf [m fun call-count total-time]
-  (let [fperf (get m fun (FPerf. fun 0 0))]
-       (FPerf. (:name fperf) (+ (:call-count fperf) call-count) (+ (:total-time fperf) total-time))))
+(defn update-fperf [^IPersistentMap m ^Symbol fun ^long call-count ^long total-time]
+  "Takes a map function call-count and total function time, and then updates the FPerf instance in the map"
+  (let [^FPerf fperf (get m fun (FPerf. fun 0 0))]
+       (FPerf. (:name fperf) (unchecked-add (:call-count fperf) call-count) (unchecked-add (:total-time fperf) total-time))))
 
-(defn add-perf-data [n fun total-time]
-     (prn "add-perf-data " n)
+(defn add-perf-data [^Symbol n ^long total-time]
+     "Calls the update-fperf function and assoc's its results into the perf-funs map"
      (dosync (commute perf-funs
                       #(assoc % n (update-fperf % n 1 total-time)))))
 
-(defn time-fun [n f args]
+(defn time-fun [^Symbol n ^IFn f args]
+  "Used by instrument-function to ancupsulate a function and time its execution time in milliseconds
+   This function will call the add-perf-data function after its applied f to its args"
   (let [start-time (System/currentTimeMillis)
         res (apply f args)
         stop-time (System/currentTimeMillis)]
-    (add-perf-data n f (- stop-time start-time))
+    (add-perf-data n (unchecked-subtract stop-time start-time))
     res))
 
-(defn instrument-function [n fun]
-  (add-hook fun (fn [f & args] (time-fun n f args) )))
+(defn instrument-function [^Symbol n ^Var fun]
+  "Takes a single function and calls add-hook attaching the time-fun to it"
+  (add-hook fun (fn [f & args] (time-fun n f args) ))) ;we use a closure to close over n, because the function name is not available when called
 
-(defn reset-instrumentation! []
+(defn reset-instrumentation! 
+   ([] 
+      "Removes all instrumentation"
+      (doseq [f-var (map find-var (keys @perf-funs))]
+        (clear-hooks f-var)))
+   ([^Symbol target-ns]
+      "Remove the instrumentation for all functions of the target-ns"
+      (doseq [f-var (map find-var (filter #(= (namespace %) (str target-ns)) (keys @perf-funs)))]
+        (clear-hooks f-var))))
+
+(defn clear-perf-data! []
+  "Clear performance data"
   (dosync (ref-set perf-funs {})))
 
-(defn instrument-functions! [target-ns]  (let [all-vars (vals (ns-publics target-ns))        fns (r/filter #(contains? (meta %) :arglists) all-vars)
+(defn instrument-functions! [^Symbol target-ns]  (let [all-vars (vals (ns-publics target-ns))        fns (r/filter #(contains? (meta %) :arglists) all-vars)
         fun-map (r/fold (fn ([] {})
                             ([m fun]
                                (let [n (fun-name fun)]
