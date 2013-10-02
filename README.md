@@ -1,9 +1,12 @@
 # goat
 
 A clojure library designed to profile clojure function performance during runtime.
-The instrumentation is meant to be run from a repl and can be removed and added during dynamically.
 
-The api makes use of https://github.com/technomancy/robert-hooke for adding hooks arround instrumented functions.
+The instrumentation is meant to be run from a repl and can be removed and added dynamically.
+
+The api makes use of https://github.com/technomancy/robert-hooke for adding hooks arround instrumented functions, 
+
+and was inspired by https://github.com/MichaelDrogalis/night-vision.
 
 ## Usage
 

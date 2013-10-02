@@ -19,6 +19,18 @@
 (defn get-fperf-data [] 
   @perf-funs)
 
+
+(defn sort-by-keys [ks coll]
+  (loop [sort-keys ks xs coll]
+    (if-let [k (first sort-keys)]
+      (recur (rest sort-keys) (sort-by k xs))
+      xs)))
+
+(defn get-top-fperf
+  ([x] (get-top-fperf x :total-count :total-time))
+  ([x & ks] 
+       (->> (get-fperf-data) vals (filter #((complement zero?) (:call-count %) )) (sort-by-keys ks) reverse (take x))))
+
 (defn update-fperf [^IPersistentMap m ^Symbol fun ^long call-count ^long total-time]
   "Takes a map function call-count and total function time, and then updates the FPerf instance in the map"
   (let [^FPerf fperf (get m fun (FPerf. fun 0 0))]
