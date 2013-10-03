@@ -46,6 +46,32 @@ and was inspired by https://github.com/MichaelDrogalis/night-vision.
 
 ```
 
+### Ordering stats
+
+```clojure
+
+(use 'goat.core)
+
+(defn myfun [n] (Thread/sleep n))
+(defn abc [] (+ 1 2))
+
+(instrument-functions! 'user)
+(myfun 100)
+(doseq [i (range 10)] (abc))
+
+;;get-top-fperf filters out call-count == 0 and returns ordered by total-count and total-time
+(get-top-fperf 3)
+;;(#goat.core.FPerf{:name user/myfun, :call-count 1, :total-time 100} 
+;; #goat.core.FPerf{:name user/abc, :call-count 10, :total-time 0})
+
+;;filter only by call-count
+(get-top-fperf 3 :call-count)
+;;(#goat.core.FPerf{:name user/abc, :call-count 10, :total-time 0} 
+;; #goat.core.FPerf{:name user/myfun, :call-count 1, :total-time 100})
+
+
+```
+
 ## License
 
 Copyright 2013 Gerrit Jansen van Vuuren and contributors
