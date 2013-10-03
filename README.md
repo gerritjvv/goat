@@ -10,6 +10,12 @@ and was inspired by https://github.com/MichaelDrogalis/night-vision.
 
 ## Usage
 
+Add this to your project.clj `:dependencies` list:
+
+    [goat "0.1.0-SNAPSHOT"]
+
+## Exmaples
+
 ```clojure
 
 (use 'goat.core)
