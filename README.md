@@ -12,7 +12,7 @@ Add this to your project.clj `:dependencies` list:
 
     [goat "0.1.0-SNAPSHOT"]
 
-## Exmaples
+## Examples
 
 ```clojure
 
